@@ -91,10 +91,10 @@ public class DataMapperBundler {
     
         installNodeAndNPM();
         runNpmInstall();
-        configureNpm();
+//        configureNpm();
         bundleDataMappers(dataMappers);
         generateDataMapperSchemas(dataMappers);
-        removeBundlingArtifacts();
+//        removeBundlingArtifacts();
         copyDataMapperFilesToTarget();
     }
 
@@ -104,33 +104,34 @@ public class DataMapperBundler {
      * @throws DataMapperException if an error occurs while deleting the generated data mapper artifacts.
      */
     public void deleteGeneratedDatamapperArtifacts() throws DataMapperException {
-        String olDataMapperDirectoryPath = resourcesDirectory + File.separator + Constants.DATA_MAPPER_DIR_PATH;
-        String newDataMapperDirectoryPath = resourcesDirectory + File.separator + Constants.DATA_MAPPER_DIR_NAME;
-        List<Path> dataMappers = listSubDirectories(olDataMapperDirectoryPath);
-        dataMappers.addAll(listSubDirectories(newDataMapperDirectoryPath));
-
-        if (dataMappers.isEmpty()) {
-            // No data mappers to delete
-            return;
-        }
-
-        for (Path dataMapper : dataMappers) {
-            String dataMapperName = dataMapper.getFileName().toString();
-            Path tsFilePath = dataMapper.resolve(dataMapperName + ".ts");
-            if (Files.notExists(tsFilePath)) {
-                return;
-            }
-            Path bundledJsFilePath = Paths.get(dataMapper + File.separator + dataMapperName + ".dmc");
-            Path inputSchemaFilePath = Paths.get(dataMapper + File.separator + dataMapperName + "_inputSchema.json");
-            Path outputSchemaFilePath = Paths.get(dataMapper + File.separator + dataMapperName + "_outputSchema.json");
-            try {
-                Files.deleteIfExists(bundledJsFilePath);
-                Files.deleteIfExists(inputSchemaFilePath);
-                Files.deleteIfExists(outputSchemaFilePath);
-            } catch (IOException e) {
-                throw new DataMapperException("Failed to delete generated data mapper artifacts.", e);
-            }
-        }
+        return;
+//        String olDataMapperDirectoryPath = resourcesDirectory + File.separator + Constants.DATA_MAPPER_DIR_PATH;
+//        String newDataMapperDirectoryPath = resourcesDirectory + File.separator + Constants.DATA_MAPPER_DIR_NAME;
+//        List<Path> dataMappers = listSubDirectories(olDataMapperDirectoryPath);
+//        dataMappers.addAll(listSubDirectories(newDataMapperDirectoryPath));
+//
+//        if (dataMappers.isEmpty()) {
+//            // No data mappers to delete
+//            return;
+//        }
+//
+//        for (Path dataMapper : dataMappers) {
+//            String dataMapperName = dataMapper.getFileName().toString();
+//            Path tsFilePath = dataMapper.resolve(dataMapperName + ".ts");
+//            if (Files.notExists(tsFilePath)) {
+//                return;
+//            }
+//            Path bundledJsFilePath = Paths.get(dataMapper + File.separator + dataMapperName + ".dmc");
+//            Path inputSchemaFilePath = Paths.get(dataMapper + File.separator + dataMapperName + "_inputSchema.json");
+//            Path outputSchemaFilePath = Paths.get(dataMapper + File.separator + dataMapperName + "_outputSchema.json");
+//            try {
+//                Files.deleteIfExists(bundledJsFilePath);
+//                Files.deleteIfExists(inputSchemaFilePath);
+//                Files.deleteIfExists(outputSchemaFilePath);
+//            } catch (IOException e) {
+//                throw new DataMapperException("Failed to delete generated data mapper artifacts.", e);
+//            }
+//        }
     }
     
     /**
@@ -154,10 +155,24 @@ public class DataMapperBundler {
      */
     private void runNpmInstall() throws DataMapperException {
         InvocationRequest request = createBaseRequest();
-        mojoInstance.logInfo("Running npm install");
+        mojoInstance.logInfo("Running npm install ---- custom");
         request.setGoals(Collections.singletonList(Constants.NPM_GOAL));
-        setNpmInstallProperties(request);
-    
+//        setNpmInstallProperties(request);
+
+        Properties properties = new Properties();
+        properties.setProperty("frontend.npm.arguments", "install"); //  --prefix ./vendor
+
+        // Add the properties to the request
+        request.setProperties(properties);
+
+//
+//        executeRequest(request, "npm install failed.");
+//        Path npmDirectory = Paths.get("." + File.separator + Constants.TARGET_DIR_NAME);
+//        request.setBaseDirectory(npmDirectory.toFile());
+//        request.setGoals(Collections.singletonList(Constants.NPM_GOAL
+//                + " -Dexec.executable=\"" + getNpmExecutablePath() + "\""
+//                + " -Dexec.args=\"" + "install" + " --prefix " + "/Users/sanoj/work/4.4.0/vscode/TestAlpha/" + "node_modules" + "\""));
+
         executeRequest(request, "npm install failed.");
     }
 
@@ -246,12 +261,23 @@ public class DataMapperBundler {
         Path npmDirectory = Paths.get("." + File.separator + Constants.TARGET_DIR_NAME);
 
         InvocationRequest request = createBaseRequest();
-        request.setBaseDirectory(npmDirectory.toFile());
-        request.setGoals(Collections.singletonList(Constants.NPM_RUN_BUILD_GOAL
-                + " -Dexec.executable=\"" + getNpmExecutablePath() + "\""
-                + " -Dexec.args=\"" + Constants.RUN_BUILD + "\""));
+        mojoInstance.logInfo("Running npm install ---- custom");
+        request.setGoals(Collections.singletonList(Constants.NPM_GOAL));
+//        setNpmInstallProperties(request);
 
-        executeRequest(request, "Failed to bundle data mapper: " + dataMapperName);
+        Properties properties = new Properties();
+        properties.setProperty("frontend.npm.arguments", "run build"); //  --prefix ./vendor
+
+        // Add the properties to the request
+        request.setProperties(properties);
+
+//        InvocationRequest request = createBaseRequest();
+//        request.setBaseDirectory(npmDirectory.toFile());
+//        request.setGoals(Collections.singletonList(Constants.NPM_RUN_BUILD_GOAL
+//                + " -Dexec.executable=\"" + getNpmExecutablePath() + "\""
+//                + " -Dexec.args=\"" + Constants.RUN_BUILD + "\""));
+//
+//        executeRequest(request, "Failed to bundle data mapper: " + dataMapperName);
 
         mojoInstance.logInfo("Bundle completed for data mapper: " + dataMapperName);
         Path bundledJsFilePath = Paths.get("." + File.separator
@@ -273,15 +299,26 @@ public class DataMapperBundler {
     private void generateDataMapperSchema(Path dataMapper) throws DataMapperException {
         String dataMapperName = dataMapper.getFileName().toString();
         mojoInstance.logInfo("Generating schema for data mapper: " + dataMapperName);
-        Path npmDirectory = Paths.get("." + File.separator + Constants.TARGET_DIR_NAME);
-        InvocationRequest request = createBaseRequest();
-        request.setBaseDirectory(npmDirectory.toFile());
-        request.setGoals(Collections.singletonList(Constants.NPM_RUN_BUILD_GOAL
-                + " -Dexec.executable=\"" + getNpmExecutablePath() + "\""
-                + " -Dexec.args=\"" + Constants.RUN_GENERATE + " " + dataMapper + File.separator
-                + dataMapperName + ".ts" + "\""));
+//        Path npmDirectory = Paths.get("." + File.separator + Constants.TARGET_DIR_NAME);
+//        InvocationRequest request = createBaseRequest();
+//        request.setBaseDirectory(npmDirectory.toFile());
+//        request.setGoals(Collections.singletonList(Constants.NPM_RUN_BUILD_GOAL
+//                + " -Dexec.executable=\"" + getNpmExecutablePath() + "\""
+//                + " -Dexec.args=\"" + Constants.RUN_GENERATE + " " + dataMapper + File.separator
+//                + dataMapperName + ".ts" + "\""));
+//
+//        executeRequest(request, "Failed to bundle data mapper: " + dataMapperName);
 
-        executeRequest(request, "Failed to bundle data mapper: " + dataMapperName);
+        InvocationRequest request = createBaseRequest();
+        mojoInstance.logInfo("Running npm install ---- custom");
+        request.setGoals(Collections.singletonList(Constants.NPM_GOAL));
+//        setNpmInstallProperties(request);
+
+        Properties properties = new Properties();
+        properties.setProperty("frontend.npm.arguments", "run generate"); //  --prefix ./vendor
+
+        // Add the properties to the request
+        request.setProperties(properties);
     }
 
     private String getNpmExecutablePath() {
@@ -326,7 +363,8 @@ public class DataMapperBundler {
      */
     private void setNpmInstallProperties(InvocationRequest request) {
         Properties properties = new Properties();
-        properties.setProperty("arguments", Constants.NPM_INSTALL);
+        properties.setProperty("arguments", Constants.NPM_INSTALL + ""); //  --prefix ./vendor/node_modules
+        mojoInstance.logInfo("NPM Install properties: " + properties.toString());
         request.setProperties(properties);
     }
     
@@ -339,6 +377,8 @@ public class DataMapperBundler {
      */
     private void executeRequest(InvocationRequest request, String errorMessage) throws DataMapperException{
         try {
+            mojoInstance.logInfo("Executing request: " + request.getGoals());
+            mojoInstance.logInfo("Props: " + request.getProperties());
             InvocationResult result = invoker.execute(request);
             if (result.getExitCode() != 0) {
                 mojoInstance.logError(errorMessage);
@@ -433,6 +473,16 @@ public class DataMapperBundler {
                 "        \"ts-loader\": \"^9.2.3\"\n" +
                 "    }\n" +
                 "}";
+
+//        // create vendor directory if not exists
+//        Path vendorPath = Paths.get("." + File.separator + Constants.TARGET_DIR_NAME + File.separator + "vendor");
+//        if (Files.notExists(vendorPath)) {
+//            try {
+//                Files.createDirectory(vendorPath);
+//            } catch (IOException e) {
+//                throw new DataMapperException("Failed to create vendor directory.", e);
+//            }
+//        }
 
         try (FileWriter fileWriter = new FileWriter("." + File.separator + Constants.TARGET_DIR_NAME
             + File.separator + Constants.PACKAGE_JSON_FILE_NAME)) {

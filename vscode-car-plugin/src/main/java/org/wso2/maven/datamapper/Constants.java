@@ -33,7 +33,7 @@ class Constants {
     static final String NPM_VERSION = "6.14.13";
     static final String FRONTEND_MVN_PLUGIN_GROUP_ID = "com.github.eirslett";
     static final String FRONTEND_MVN_PLUGIN_ARTIFACT_ID = "frontend-maven-plugin";
-    static final String FRONTEND_MVN_PLUGIN_VERSION = "1.12.0";
+    static final String FRONTEND_MVN_PLUGIN_VERSION = "1.15.1";
     static final String INSTALL_NODE_AND_NPM = "install-node-and-npm";
     static final String NPM_INSTALL = "install";
     static final String BUILD_COMMAND = "build";
